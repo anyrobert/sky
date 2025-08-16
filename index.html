@@ -151,6 +151,39 @@
       right: 16px;
       z-index: 3;
     }
+
+    .sparkle {
+      position: fixed;
+      background: #ffffff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10;
+      animation: sparkle-fall 3s ease-out forwards;
+      box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+    }
+
+    @keyframes sparkle-fall {
+      0% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg) translateY(0) translateX(0);
+      }
+      10% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg) translateY(0) translateX(0);
+      }
+      30% {
+        opacity: 0.9;
+        transform: scale(1.1) rotate(90deg) translateY(-10px) translateX(calc(var(--drift, 0px) * 0.3));
+      }
+      60% {
+        opacity: 0.7;
+        transform: scale(0.8) rotate(180deg) translateY(20px) translateX(calc(var(--drift, 0px) * 0.7));
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0) rotate(360deg) translateY(100px) translateX(var(--drift, 0px));
+      }
+    }
   </style>
 </head>
 
@@ -175,6 +208,55 @@
       // Star data structure for persistence
       const STORAGE_KEY = "star-maker-stars";
       const MAX_STARS = 400;
+      let starCount = 0;
+
+      function createSparkles(centerX, centerY) {
+        const sparkleCount = 80;
+        const colors = ["#ffffff", "#ffd700", "#87ceeb", "#ff69b4", "#98fb98", "#dda0dd"];
+        const radius = 150; // Area around the star where sparkles appear
+        
+        for (let i = 0; i < sparkleCount; i++) {
+          const sparkle = document.createElement("div");
+          sparkle.className = "sparkle";
+          
+          // Random size between 2-8px
+          const size = 2 + Math.random() * 6;
+          sparkle.style.width = size + "px";
+          sparkle.style.height = size + "px";
+          
+          // Position sparkles around the star location
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * radius;
+          const sparkleX = centerX + Math.cos(angle) * distance;
+          const sparkleY = centerY + Math.sin(angle) * distance;
+          
+          sparkle.style.left = sparkleX + "px";
+          sparkle.style.top = sparkleY + "px";
+          
+          // Random color
+          sparkle.style.color = colors[Math.floor(Math.random() * colors.length)];
+          sparkle.style.background = sparkle.style.color;
+          
+          // Random animation delay and duration
+          const delay = Math.random() * 0.5;
+          const duration = 0.8 + Math.random() * 0.2;
+          sparkle.style.animationDelay = delay + "s";
+          sparkle.style.animationDuration = duration + "s";
+          
+          // Random horizontal drift
+          const drift = (Math.random() - 0.5) * 100;
+          sparkle.style.setProperty('--drift', drift + 'px');
+          
+          document.body.appendChild(sparkle);
+          
+          // Remove sparkle after animation
+          setTimeout(() => {
+            if (sparkle.parentNode) {
+              sparkle.parentNode.removeChild(sparkle);
+            }
+          }, (delay + duration + 0.2) * 1000);
+        }
+      }
 
       function saveStarsToStorage() {
         const stars = Array.from(sky.querySelectorAll(".star")).map(star => ({
@@ -206,6 +288,7 @@
               star.style.animationDelay = starData.delay;
               sky.appendChild(star);
             });
+            starCount = stars.length;
           }
         } catch (e) {
           console.warn("Failed to load stars from storage:", e);
@@ -252,6 +335,13 @@
         sky.appendChild(star);
         enforceStarLimit();
         saveStarsToStorage();
+        
+        // Increment star count and check for sparkles
+        starCount++;
+        if (starCount % 5 === 0) {
+          createSparkles(posX + size / 2, posY + size / 2); // Pass center of the new star
+        }
+        
         return star;
       }
 
