@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nosso Céu</title>
+  <style>
+    :root {
+      --sky-color-1: #060710;
+      --sky-color-2: #0a0c1c;
+      --sky-color-3: #0f152d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 70% 20%, #11162a 0%, var(--sky-color-3) 30%, var(--sky-color-2) 60%, var(--sky-color-1) 100%);
+      color: #cbd5e1;
+      overflow: hidden;
+    }
+
+    .sky {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(2px 2px at 15% 20%, rgba(255, 255, 255, 0.2), transparent 60%),
+        radial-gradient(1px 1px at 55% 40%, rgba(255, 255, 255, 0.14), transparent 60%),
+        radial-gradient(1.5px 1.5px at 85% 70%, rgba(255, 255, 255, 0.16), transparent 60%),
+        radial-gradient(1.8px 1.8px at 35% 75%, rgba(255, 255, 255, 0.12), transparent 60%);
+      isolation: isolate;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px currentColor);
+      animation-name: twinkle;
+      animation-iteration-count: infinite;
+      animation-timing-function: ease-in-out;
+    }
+
+    @keyframes twinkle {
+
+      0%,
+      100% {
+        opacity: 0.8;
+        transform: scale(0.9);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.15);
+      }
+    }
+
+    .click-ring {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      left: 0;
+      top: 0;
+      border-radius: 9999px;
+      border: 2px solid currentColor;
+      opacity: 0.9;
+      transform: translate(-50%, -50%) scale(0.25);
+      pointer-events: none;
+      filter: drop-shadow(0 0 8px currentColor);
+      animation: ring 700ms ease-out forwards;
+      z-index: 1;
+    }
+
+    @keyframes ring {
+      0% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(0.2);
+      }
+
+      70% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(6.5);
+      }
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(2, 4, 10, 0.6);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: #e2e8f0;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+      user-select: none;
+      z-index: 2;
+    }
+
+    .hud kbd {
+      background: rgba(148, 163, 184, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sky" id="sky" aria-label="Night sky"></div>
+  <div class="hud" aria-hidden="true">
+    Se você apertar em qualquer parte do nosso céu, vai acontecer algo mágico.
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const sky = document.getElementById("sky");
+
+      // Star colors used on click
+      const starColors = ["#ff88e5", "#7bdcff", "#ffd27f", "#b693ff", "#ffffff"];
+      function randomFrom(arr) { return arr[(Math.random() * arr.length) | 0]; }
+
+      // Star data structure for persistence
+      const STORAGE_KEY = "star-maker-stars";
+      const MAX_STARS = 400;
+
+      function saveStarsToStorage() {
+        const stars = Array.from(sky.querySelectorAll(".star")).map(star => ({
+          x: parseFloat(star.style.left),
+          y: parseFloat(star.style.top),
+          size: parseFloat(star.style.width),
+          color: star.style.color,
+          duration: star.style.animationDuration,
+          delay: star.style.animationDelay
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stars));
+      }
+
+      function loadStarsFromStorage() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const stars = JSON.parse(saved);
+            stars.forEach(starData => {
+              const star = document.createElement("div");
+              star.className = "star";
+              star.style.width = starData.size + "px";
+              star.style.height = starData.size + "px";
+              star.style.left = starData.x + "px";
+              star.style.top = starData.y + "px";
+              star.style.color = starData.color;
+              star.style.background = "radial-gradient(circle at 50% 50%, #ffffff, " + starData.color + " 35%, rgba(255,255,255,0) 70%)";
+              star.style.animationDuration = starData.duration;
+              star.style.animationDelay = starData.delay;
+              sky.appendChild(star);
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to load stars from storage:", e);
+        }
+      }
+
+      function getViewportSize() {
+        return { width: sky.clientWidth, height: sky.clientHeight };
+      }
+
+      function generateRandomPosition() {
+        const { width, height } = getViewportSize();
+        const x = Math.random() * (width - 8) + 4;
+        const y = Math.random() * (height - 8) + 4;
+        return { x, y };
+      }
+
+      function createStarAt(positionX, positionY, options) {
+        const star = document.createElement("div");
+        const minSize = 2;
+        const maxSize = 5.5;
+        const size = minSize + Math.random() * (maxSize - minSize);
+        const hueColor = options && options.color ? options.color : "#ffffff";
+        const anchorCenter = options && options.anchorCenter === true;
+
+        star.className = "star";
+        star.style.width = size + "px";
+        star.style.height = size + "px";
+        let posX = anchorCenter ? positionX - size / 2 : positionX;
+        let posY = anchorCenter ? positionY - size / 2 : positionY;
+        const boundsWidth = sky.clientWidth;
+        const boundsHeight = sky.clientHeight;
+        posX = Math.max(0, Math.min(boundsWidth - size, posX));
+        posY = Math.max(0, Math.min(boundsHeight - size, posY));
+        star.style.left = posX + "px";
+        star.style.top = posY + "px";
+        star.style.color = hueColor;
+        star.style.background = "radial-gradient(circle at 50% 50%, #ffffff, " + hueColor + " 35%, rgba(255,255,255,0) 70%)";
+        const duration = (2 + Math.random() * 4).toFixed(2) + "s";
+        const delay = (-Math.random() * 2).toFixed(2) + "s";
+        star.style.animationDuration = duration;
+        star.style.animationDelay = delay;
+
+        sky.appendChild(star);
+        enforceStarLimit();
+        saveStarsToStorage();
+        return star;
+      }
+
+      function enforceStarLimit() {
+        while (sky.querySelectorAll(".star").length > MAX_STARS) {
+          sky.removeChild(sky.querySelector(".star"));
+        }
+        saveStarsToStorage();
+      }
+
+      function createClickRingAt(x, y, color) {
+        const ring = document.createElement("div");
+        ring.className = "click-ring";
+        ring.style.left = x + "px";
+        ring.style.top = y + "px";
+        ring.style.color = color;
+        ring.addEventListener("animationend", () => {
+          ring.remove();
+        });
+        sky.appendChild(ring);
+      }
+
+      function handlePointerDown(event) {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        const rect = sky.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const color = randomFrom(starColors);
+        createStarAt(x, y, { color, anchorCenter: true });
+        createClickRingAt(x, y, color);
+      }
+
+      sky.addEventListener("pointerdown", handlePointerDown);
+
+      // Seed with a few faint background stars for ambience
+      function seedBackgroundStars() {
+        for (let i = 0; i < 60; i++) {
+          const { x, y } = generateRandomPosition();
+          createStarAt(x, y, { color: "rgba(200,220,255,0.7)" });
+        }
+      }
+
+      // Load saved stars first, then seed background if needed
+      loadStarsFromStorage();
+      if (sky.querySelectorAll(".star").length === 0) {
+        seedBackgroundStars();
+      }
+    })();
+  </script>
+</body>
+
+</html>
