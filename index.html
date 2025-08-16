@@ -4,6 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="print-color-adjust" content="exact" />
   <title>Nosso Céu</title>
   <style>
     :root {
@@ -152,6 +154,13 @@
       z-index: 3;
     }
 
+    .save-btn.top-right {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 3;
+    }
+
     .sparkle {
       position: fixed;
       background: #ffffff;
@@ -184,6 +193,77 @@
         transform: scale(0) rotate(360deg) translateY(100px) translateX(var(--drift, 0px));
       }
     }
+
+    /* Print styles */
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #060710 !important;
+        background-image: radial-gradient(1200px 800px at 70% 20%, #11162a 0%, #0f152d 30%, #0a0c1c 60%, #060710 100%) !important;
+        min-height: 100vh !important;
+        color: #cbd5e1 !important;
+      }
+      
+      .sky {
+        position: relative !important;
+        width: 100% !important;
+        height: 100vh !important;
+        background: #060710 !important;
+        background-image: radial-gradient(2px 2px at 15% 20%, rgba(255, 255, 255, 0.2), transparent 60%),
+                          radial-gradient(1px 1px at 55% 40%, rgba(255, 255, 255, 0.14), transparent 60%),
+                          radial-gradient(1.5px 1.5px at 85% 70%, rgba(255, 255, 255, 0.16), transparent 60%),
+                          radial-gradient(1.8px 1.8px at 35% 75%, rgba(255, 255, 255, 0.12), transparent 60%) !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      .star {
+        position: absolute !important;
+        border-radius: 50% !important;
+        animation: none !important;
+        opacity: 1 !important;
+        transform: scale(1) !important;
+        background: radial-gradient(circle at 50% 50%, #ffffff, currentColor 35%, rgba(255,255,255,0) 70%) !important;
+        filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px currentColor) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      .hud, .clear-btn, .save-btn {
+        display: none !important;
+      }
+      
+      .sparkle {
+        display: none !important;
+      }
+    }
+
+    /* Force print styles when printing class is active */
+    body.printing {
+      background: #060710 !important;
+      background-image: radial-gradient(1200px 800px at 70% 20%, #11162a 0%, #0f152d 30%, #0a0c1c 60%, #060710 100%) !important;
+    }
+    
+    body.printing .sky {
+      background: #060710 !important;
+      background-image: radial-gradient(2px 2px at 15% 20%, rgba(255, 255, 255, 0.2), transparent 60%),
+                        radial-gradient(1px 1px at 55% 40%, rgba(255, 255, 255, 0.14), transparent 60%),
+                        radial-gradient(1.5px 1.5px at 85% 70%, rgba(255, 255, 255, 0.16), transparent 60%),
+                        radial-gradient(1.8px 1.8px at 35% 75%, rgba(255, 255, 255, 0.12), transparent 60%) !important;
+    }
+    
+    body.printing .star {
+      background: radial-gradient(circle at 50% 50%, #ffffff, currentColor 35%, rgba(255,255,255,0) 70%) !important;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px currentColor) !important;
+    }
   </style>
 </head>
 
@@ -194,6 +274,7 @@
   </div>
   
   <button class="clear-btn top-right" onclick="clearSky()" title="Limpar o céu">Fazer um novo céu</button>
+  <button class="save-btn top-right" onclick="saveSky()" title="Salvar o céu como imagem">💾 Salvar</button>
 
   <script>
     (function () {
@@ -435,6 +516,21 @@
       for (let i = 0; i < 60; i++) {
         createBackgroundStar();
       }
+    }
+
+    // Global function for the save button
+    function saveSky() {
+      // Temporarily apply print styles to make sure they're active
+      document.body.classList.add('printing');
+      
+      // Small delay to ensure styles are applied
+      setTimeout(() => {
+        window.print();
+        // Remove print class after printing
+        setTimeout(() => {
+          document.body.classList.remove('printing');
+        }, 1000);
+      }, 100);
     }
   </script>
 </body>
