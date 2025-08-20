@@ -294,7 +294,7 @@
 <body>
   <div class="sky" id="sky" aria-label="Night sky"></div>
   <div class="hud" aria-hidden="true">
-    Se você apertar em qualquer parte do nosso céu, vai acontecer algo mágico.
+    Clique ou arraste o cursor pela tela para criar estrelas mágicas no nosso céu.
   </div>
   
   <button class="clear-btn top-right" onclick="clearSky()" title="Limpar o céu">Fazer um novo céu</button>
@@ -313,6 +313,11 @@
       // Star data structure for persistence
       const STORAGE_KEY = "star-maker-stars";
       const MAX_STARS = 400;
+
+      // Drag state tracking
+      let isDragging = false;
+      let lastStarTime = 0;
+      const STAR_CREATION_INTERVAL = 50; // Minimum time between stars (ms)
 
       function saveStarsToStorage() {
         const stars = Array.from(sky.querySelectorAll(".star")).map(star => ({
@@ -415,6 +420,7 @@
 
       function handlePointerDown(event) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
+        isDragging = true;
         const rect = sky.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
@@ -423,7 +429,62 @@
         createClickRingAt(x, y, color);
       }
 
+      function handlePointerMove(event) {
+        if (!isDragging) return;
+        
+        const now = Date.now();
+        if (now - lastStarTime < STAR_CREATION_INTERVAL) return;
+        
+        const rect = sky.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const color = randomFrom(starColors);
+        createStarAt(x, y, { color, anchorCenter: true });
+        lastStarTime = now;
+      }
+
+      function handlePointerUp(event) {
+        isDragging = false;
+      }
+
       sky.addEventListener("pointerdown", handlePointerDown);
+      sky.addEventListener("pointermove", handlePointerMove);
+      sky.addEventListener("pointerup", handlePointerUp);
+      sky.addEventListener("pointerleave", handlePointerUp);
+
+      // Touch event handling for mobile devices
+      sky.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const rect = sky.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        isDragging = true;
+        const color = randomFrom(starColors);
+        createStarAt(x, y, { color, anchorCenter: true });
+        createClickRingAt(x, y, color);
+      });
+
+      sky.addEventListener("touchmove", (event) => {
+        event.preventDefault();
+        if (!isDragging) return;
+        
+        const now = Date.now();
+        if (now - lastStarTime < STAR_CREATION_INTERVAL) return;
+        
+        const touch = event.touches[0];
+        const rect = sky.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const color = randomFrom(starColors);
+        createStarAt(x, y, { color, anchorCenter: true });
+        lastStarTime = now;
+      });
+
+      sky.addEventListener("touchend", (event) => {
+        event.preventDefault();
+        isDragging = false;
+      });
 
       // Seed with a few faint background stars for ambience
       function seedBackgroundStars() {
